@@ -914,6 +914,56 @@ namespace Seal.Model
                 }
             }
 
+            // Fill null cells with zeros
+            foreach (ResultPage page in model.Pages)
+            {
+                for (int r = 0; r < page.Datas.Count; r++)
+                {
+                    var row = page.Datas.ElementAt(r);
+                    var key = page.Datas.Keys.ElementAt(r);
+                    ResultData[] dataWithZero = new ResultData[page.Columns.Count];
+
+                    // Refill with existing values
+                    for (int i = 0; i < row.Value.Count; i++)
+                    {
+                        dataWithZero[i] = row.Value[i];
+                    }
+
+                    // Fill remaining cells with zeros
+                    int currentIndex = row.Value.Count;
+                    for (int i = 0; i < page.Columns.Count; i++)
+                    {
+                        var col = page.Columns[i];
+                        bool isMissing = true;
+
+                        foreach (ResultData res in dataWithZero)
+                        {
+                            if (res != null && res.Column == col) isMissing = false;
+                        }
+
+                        if (isMissing)
+                        {
+                            dataWithZero[currentIndex] = new ResultData
+                            {
+                                Column = page.Columns[i],
+                                Row = row.Value[0].Row,
+                                Hidden = row.Value[0].Hidden,
+                                Data = new ResultCell[1]
+                            };
+                            dataWithZero[currentIndex].Data[0] = new ResultCell
+                            {
+                                Value = 0,
+                                Element = row.Value[0].Data[0].Element
+                            };
+                            currentIndex++;
+                        }
+                    }
+
+                    // Replace KeyValuePair with new one containing zeros
+                    page.Datas[key] = dataWithZero.ToList();
+                }
+            }
+
             if (model.Pages.Count == 0)
             {
                 model.Pages.Add(new ResultPage() { Report = Report, Model = model });
